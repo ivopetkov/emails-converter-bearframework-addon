@@ -31,16 +31,42 @@ class EmailsConverter
         $data = $emailParser->parse($raw);
 
         $email = $app->emails->make();
-        if (strlen($data['text']) > 0) {
-            $email->content->add($data['text'], 'text/plain');
-        }
-        if (strlen($data['html']) > 0) {
-            $email->content->add($data['html'], 'text/html');
-        }
+
+        $email->date = $data['date'];
         $email->subject = $data['subject'];
-        $email->recipients->add($data['to'][0], $data['to'][1]);
-        $email->sender->email = $data['from'][0];
-        $email->sender->name = $data['from'][1];
+        foreach ($data['to'] as $recipient) {
+            $email->recipients->add($recipient['email'], $recipient['name']);
+        }
+        $email->sender->email = $data['from']['email'];
+        $email->sender->name = $data['from']['name'];
+        $email->returnPath = $data['returnPath'];
+        $email->priority = $data['priority'];
+        foreach ($data['replyTo'] as $replyToRecipient) {
+            $email->replyToRecipients->add($replyToRecipient['email'], $replyToRecipient['name']);
+        }
+        foreach ($data['cc'] as $ccRecipient) {
+            $email->ccRecipients->add($ccRecipient['email'], $ccRecipient['name']);
+        }
+        foreach ($data['bcc'] as $bccRecipient) {
+            $email->bccRecipients->add($bccRecipient['email'], $bccRecipient['name']);
+        }
+        foreach ($data['content'] as $contentPart) {
+            $email->content->add($contentPart['content'], $contentPart['mimeType'], $contentPart['encoding']);
+        }
+        foreach ($data['attachments'] as $attachments) {
+            $email->attachments->addContent($attachments['content'], $attachments['name'], $attachments['mimeType']);
+        }
+        foreach ($data['embeds'] as $embed) {
+            $email->embeds->addContent($embed['id'], $embed['content'], $embed['name'], $embed['mimeType']);
+        }
+        foreach ($data['headers'] as $header) {
+            $lowerCaseName = strtolower($header['name']);
+            if (in_array($lowerCaseName, ['from', 'reply-to', 'to', 'cc', 'bcc', 'date', 'subject', 'return-path', 'x-priority'])) {
+                continue;
+            }
+            $email->headers->add($header['name'], $header['value']);
+        }
+
         return $email;
     }
 
