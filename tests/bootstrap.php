@@ -47,6 +47,8 @@ class BearFrameworkAddonTestCase extends PHPUnit_Framework_TestCase
             $this->app->initialize();
             $this->app->request->base = 'http://example.com/www';
             $this->app->request->method = 'GET';
+            
+            $this->app->addons->add('ivopetkov/emails-converter-bearframework-addon');
         }
 
         return $this->app;
