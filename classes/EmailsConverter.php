@@ -31,8 +31,7 @@ class EmailsConverter
         $data = $emailParser->parse($raw);
 
         $email = $app->emails->make();
-
-        $email->date = $data['date'];
+        $email->date = strlen($data['date']) > 0 ? (int) $data['date'] : null;
         $email->subject = $data['subject'];
         foreach ($data['to'] as $recipient) {
             $email->recipients->add($recipient['email'], $recipient['name']);
@@ -54,10 +53,10 @@ class EmailsConverter
             $email->content->add($contentPart['content'], $contentPart['mimeType'], $contentPart['encoding']);
         }
         foreach ($data['attachments'] as $attachments) {
-            $email->attachments->addContent($attachments['content'], $attachments['name'], $attachments['mimeType']);
+            $email->attachments->addContent((string) $attachments['content'], $attachments['name'], $attachments['mimeType']);
         }
         foreach ($data['embeds'] as $embed) {
-            $email->embeds->addContent($embed['id'], $embed['content'], $embed['name'], $embed['mimeType']);
+            $email->embeds->addContent((string) $embed['id'], (string) $embed['content'], $embed['name'], $embed['mimeType']);
         }
         foreach ($data['headers'] as $header) {
             $lowerCaseName = strtolower($header['name']);
