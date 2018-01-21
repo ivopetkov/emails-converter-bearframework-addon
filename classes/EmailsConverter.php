@@ -24,6 +24,97 @@ class EmailsConverter
         return $swiftMessage->toString();
     }
 
+    public function emailToHTML(\BearFramework\Emails\Email $email, $optimize = false): string
+    {
+        $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
+        if ($contentPart !== null) {
+            $content = $contentPart->content;
+        } else {
+            $content = '';
+            $result = [];
+            $contentParts = $email->content->getList();
+            foreach ($contentParts as $contentPart) {
+                $result[] = htmlspecialchars($contentPart->content);
+            }
+            $content = nl2br(implode("\n\n", $result));
+        }
+        if ($optimize) {
+            $matches = null;
+            preg_match_all('/href\=\"(skype|mailto|tel)\:(.*?)\"/', $content, $matches);
+            $replacedTexts = [];
+            foreach ($matches[0] as $match) {
+                $replacement = 'href="http://' . md5($match) . '.xxx"';
+                $replacedTexts[$match] = $replacement;
+                $content = str_replace($match, $replacement, $content);
+            }
+            $config = \HTMLPurifier_Config::createDefault();
+            $config->set('Attr.AllowedRel', ['nofollow', 'publisher']);
+            $config->set('Cache.SerializerPath', sys_get_temp_dir());
+            $purifier = new \HTMLPurifier($config);
+            $content = $purifier->purify($content);
+            foreach ($replacedTexts as $match => $replacement) {
+                $content = str_replace($replacement, $match, $content);
+            }
+        }
+        $dom = new \IvoPetkov\HTML5DOMDocument();
+        $dom->loadHTML($content);
+        if ($optimize) {
+
+            $getDataURI = function(string $url) {
+                if (strpos($url, '//') === 0) {
+                    $url = 'http:' . $url;
+                }
+                if (strpos($url, 'https://') === 0 || strpos($url, 'http://') === 0) {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                    $result = curl_exec($ch);
+                    $error = curl_error($ch);
+                    $info = curl_getinfo($ch);
+                    curl_close($ch);
+                    if (!isset($error{0})) {
+                        return 'data:' . (isset($info['content_type']) ? $info['content_type'] : '') . ';base64,' . base64_encode($result);
+                    }
+                }
+                return 'emails-converter-undefined';
+            };
+
+            $elements = $dom->querySelectorAll('[src]');
+            foreach ($elements as $element) {
+                $element->setAttribute('src', $getDataURI((string) $element->getAttribute('src')));
+            }
+            $elements = $dom->querySelectorAll('[style]');
+            foreach ($elements as $element) {
+                $style = (string) $element->getAttribute('style');
+                $matches = [];
+                preg_match_all('/url\([\'"]*(.*?)[\'"]*\)/', $style, $matches);
+                if (isset($matches[1])) {
+                    foreach ($matches[1] as $match) {
+                        $style = str_replace($match, $getDataURI($match), $style);
+                    }
+                }
+                $element->setAttribute('style', $style);
+            }
+            $elements = $dom->querySelectorAll('a[href]');
+            foreach ($elements as $element) {
+                $element->setAttribute('rel', 'noopener');
+                $element->setAttribute('target', '_blank');
+            }
+        }
+        return $dom->saveHTML();
+    }
+
+    public function emailToText(\BearFramework\Emails\Email $email): string
+    {
+        $contentPart = $email->content->getList()->filterBy('mimeType', 'text/plain')->getFirst();
+        if ($contentPart !== null) {
+            return trim($contentPart->content);
+        }
+        $html = $this->emailToHTML($email);
+        return trim($this->htmlToText($html));
+    }
+
     public function rawToEmail(string $raw): \BearFramework\Emails\Email
     {
         $app = App::get();
@@ -67,6 +158,24 @@ class EmailsConverter
         }
 
         return $email;
+    }
+
+    public function rawToHTML(string $raw): string
+    {
+        $email = $this->rawToEmail($raw);
+        return $this->emailToHTML($email);
+    }
+
+    public function rawToText(string $raw): string
+    {
+        $email = $this->rawToEmail($raw);
+        return $this->emailToText($email);
+    }
+
+    public function htmlToText(string $html): string
+    {
+        $html2Text = new \Html2Text\Html2Text($html);
+        return $html2Text->getText();
     }
 
 }
