@@ -19,7 +19,8 @@
         "ivopetkov/email-parser": "dev-master",
         "ezyang/htmlpurifier": "4.*",
         "html2text/html2text": "4.*",
-        "ivopetkov/html5-dom-document-php": "0.5.*"
+        "ivopetkov/html5-dom-document-php": "0.5.*",
+        "tijsverkoyen/css-to-inline-styles": "2.*"
     },
     "require-dev": {
         "phpunit/phpunit": "^4.8"

@@ -164,6 +164,7 @@ t4AX
     <head>
         <link rel="stylesheet" href="http://ivopetkov.github.io/example-files/example-css.css" />
         <script src="http://ivopetkov.github.io/example-files/example-js.js"></script>
+        <style>div{border:1px solid black;}</style>
     </head>
     <body>
         Hi,<br>

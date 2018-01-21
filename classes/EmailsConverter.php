@@ -39,6 +39,44 @@ class EmailsConverter
             $content = nl2br(implode("\n\n", $result));
         }
         if ($optimize) {
+
+            $getUrlContent = function(string $value) {
+                if (strpos($value, '//') === 0) {
+                    $value = 'http:' . $value;
+                }
+                if (strpos($value, 'https://') === 0 || strpos($value, 'http://') === 0) {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $value);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                    $result = curl_exec($ch);
+                    $error = curl_error($ch);
+                    $info = curl_getinfo($ch);
+                    curl_close($ch);
+                    if (!isset($error{0})) {
+                        return ['content' => $result, 'contentType' => isset($info['content_type']) ? $info['content_type'] : null];
+                    }
+                }
+                return ['content' => null, 'contentType' => null];
+            };
+
+            $dom = new \IvoPetkov\HTML5DOMDocument();
+            $dom->loadHTML($content);
+            $elements = $dom->querySelectorAll('link[rel="stylesheet"]');
+            $cssStyles = [];
+            foreach ($elements as $element) {
+                $href = (string) $element->getAttribute('href');
+                if (strlen($href) > 0) {
+                    $cssStyles[] = trim((string) $getUrlContent($href)['content']);
+                }
+            }
+            $cssToInlineStyles = new \TijsVerkoyen\CssToInlineStyles\CssToInlineStyles();
+            $content = $cssToInlineStyles->convert($content);
+            foreach ($cssStyles as $cssStyle) {
+                if (strlen($cssStyle) > 0) {
+                    $content = $cssToInlineStyles->convert($content, $cssStyle);
+                }
+            }
             $matches = null;
             preg_match_all('/href\=\"(skype|mailto|tel)\:(.*?)\"/', $content, $matches);
             $replacedTexts = [];
@@ -60,41 +98,38 @@ class EmailsConverter
         $dom->loadHTML($content);
         if ($optimize) {
 
-            $getDataURI = function(string $url) {
-                if (strpos($url, '//') === 0) {
-                    $url = 'http:' . $url;
+            $getDataURI = function(string $value) use ($getUrlContent) {
+                if (strpos($value, 'data:') === 0) {
+                    return $value;
                 }
-                if (strpos($url, 'https://') === 0 || strpos($url, 'http://') === 0) {
-                    $ch = curl_init();
-                    curl_setopt($ch, CURLOPT_URL, $url);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                    $result = curl_exec($ch);
-                    $error = curl_error($ch);
-                    $info = curl_getinfo($ch);
-                    curl_close($ch);
-                    if (!isset($error{0})) {
-                        return 'data:' . (isset($info['content_type']) ? $info['content_type'] : '') . ';base64,' . base64_encode($result);
-                    }
+                $result = $getUrlContent($value);
+                if ($result['content'] !== null) {
+                    return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
                 }
                 return 'emails-converter-undefined';
             };
 
             $elements = $dom->querySelectorAll('[src]');
             foreach ($elements as $element) {
-                $element->setAttribute('src', $getDataURI((string) $element->getAttribute('src')));
+                $src = (string) $element->getAttribute('src');
+                $element->setAttribute('src', $getDataURI($src));
+                $element->setAttribute('data-emails-converter-original-src', $src);
             }
             $elements = $dom->querySelectorAll('[style]');
             foreach ($elements as $element) {
                 $style = (string) $element->getAttribute('style');
+                $newStyle = $style;
                 $matches = [];
-                preg_match_all('/url\([\'"]*(.*?)[\'"]*\)/', $style, $matches);
+                preg_match_all('/url\([\'"]*(.*?)[\'"]*\)/', $newStyle, $matches);
                 if (isset($matches[1])) {
                     foreach ($matches[1] as $match) {
-                        $style = str_replace($match, $getDataURI($match), $style);
+                        $newStyle = str_replace($match, $getDataURI($match), $style);
                     }
                 }
-                $element->setAttribute('style', $style);
+                if ($style !== $newStyle) {
+                    $element->setAttribute('style', $newStyle);
+                    $element->setAttribute('data-emails-converter-original-style', $style);
+                }
             }
             $elements = $dom->querySelectorAll('a[href]');
             foreach ($elements as $element) {
