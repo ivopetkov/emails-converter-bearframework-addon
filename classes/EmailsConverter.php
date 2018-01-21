@@ -48,7 +48,8 @@ class EmailsConverter
                     $ch = curl_init();
                     curl_setopt($ch, CURLOPT_URL, $value);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
                     $result = curl_exec($ch);
                     $error = curl_error($ch);
                     $info = curl_getinfo($ch);
@@ -103,16 +104,21 @@ class EmailsConverter
                     return $value;
                 }
                 $result = $getUrlContent($value);
-                if ($result['content'] !== null) {
+                if (strlen($result['content']) > 0) {
                     return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
                 }
-                return 'emails-converter-undefined';
+                return '';
             };
 
             $elements = $dom->querySelectorAll('[src]');
             foreach ($elements as $element) {
                 $src = (string) $element->getAttribute('src');
-                $element->setAttribute('src', $getDataURI($src));
+                $newSrc = $getDataURI($src);
+                if (strlen($newSrc) > 0) {
+                    $element->setAttribute('src', $newSrc);
+                } else {
+                    $element->removeAttribute('src');
+                }
                 $element->setAttribute('data-emails-converter-original-src', $src);
             }
             $elements = $dom->querySelectorAll('[style]');
@@ -122,14 +128,23 @@ class EmailsConverter
                 $matches = [];
                 preg_match_all('/url\([\'"]*(.*?)[\'"]*\)/', $newStyle, $matches);
                 if (isset($matches[1])) {
-                    foreach ($matches[1] as $match) {
-                        $newStyle = str_replace($match, $getDataURI($match), $style);
+                    foreach ($matches[1] as $index => $match) {
+                        $newValue = $getDataURI($match);
+                        if (strlen($newValue) > 0) {
+                            $newStyle = str_replace($match, $newValue, $style);
+                        } else {
+                            $newStyle = str_replace($matches[0][$index], 'none', $style);
+                        }
                     }
                 }
                 if ($style !== $newStyle) {
                     $element->setAttribute('style', $newStyle);
                     $element->setAttribute('data-emails-converter-original-style', $style);
                 }
+            }
+            $elements = $dom->querySelectorAll('[class]');
+            foreach ($elements as $element) {
+                $element->removeAttribute('class');
             }
             $elements = $dom->querySelectorAll('a[href]');
             foreach ($elements as $element) {
