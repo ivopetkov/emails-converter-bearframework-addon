@@ -39,7 +39,6 @@ class EmailsConverter
         $removeImages = isset($options['removeImages']) && $options['removeImages'] === true;
         $secureLinks = isset($options['secureLinks']) && $options['secureLinks'] === true;
 
-
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
         if ($contentPart !== null) {
             $content = trim($contentPart->content);
@@ -74,9 +73,18 @@ class EmailsConverter
             return ['content' => null, 'contentType' => null];
         };
 
-        $getDataURI = function(string $value) use ($getUrlContent) {
+        $getDataURI = function(string $value) use ($getUrlContent, $email) {
             if (strpos($value, 'data:') === 0) {
                 return $value;
+            }
+            if (strpos($value, 'cid:') === 0) {
+                $embed = $email->embeds->getList()
+                        ->filterBy('cid', substr($value, 4))
+                        ->getFirst();
+                if ($embed !== null) {
+                    return 'data:;base64,' . base64_encode($embed->content);
+                }
+                return '';
             }
             $result = $getUrlContent($value);
             if (strlen($result['content']) > 0) {
@@ -108,14 +116,24 @@ class EmailsConverter
         }
 
         if ($sanitize) {
+            $replacedTexts = [];
+
+            $matches = null;
+            preg_match_all('/src\=\"cid:(.*?)\"/', $content, $matches);
+            foreach ($matches[0] as $match) {
+                $replacement = 'src="http://' . md5($match) . '.xxx"';
+                $replacedTexts[$match] = $replacement;
+                $content = str_replace($match, $replacement, $content);
+            }
+
             $matches = null;
             preg_match_all('/href\=\"(skype|mailto|tel)\:(.*?)\"/', $content, $matches);
-            $replacedTexts = [];
             foreach ($matches[0] as $match) {
                 $replacement = 'href="http://' . md5($match) . '.xxx"';
                 $replacedTexts[$match] = $replacement;
                 $content = str_replace($match, $replacement, $content);
             }
+
             $config = \HTMLPurifier_Config::createDefault();
             $config->set('Attr.AllowedRel', ['nofollow', 'noopener', 'publisher']);
             $config->set('Cache.SerializerPath', sys_get_temp_dir());
