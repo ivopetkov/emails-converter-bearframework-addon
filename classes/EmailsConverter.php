@@ -10,6 +10,7 @@
 namespace IvoPetkov\BearFrameworkAddons;
 
 use BearFramework\App;
+use IvoPetkov\HTML5DOMDocument;
 
 /**
  * Emails converter.
@@ -24,11 +25,24 @@ class EmailsConverter
         return $swiftMessage->toString();
     }
 
-    public function emailToHTML(\BearFramework\Emails\Email $email, $optimize = false): string
+    /**
+     * 
+     * @param \BearFramework\Emails\Email $email
+     * @param array $options Available options : sanitize, inlineCSS, embedImages, removeImages, secureLinks
+     * @return string
+     */
+    public function emailToHTML(\BearFramework\Emails\Email $email, $options = []): string
     {
+        $sanitize = isset($options['sanitize']) && $options['sanitize'] === true;
+        $inlineCSS = isset($options['inlineCSS']) && $options['inlineCSS'] === true;
+        $embedImages = isset($options['embedImages']) && $options['embedImages'] === true;
+        $removeImages = isset($options['removeImages']) && $options['removeImages'] === true;
+        $secureLinks = isset($options['secureLinks']) && $options['secureLinks'] === true;
+
+
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
         if ($contentPart !== null) {
-            $content = $contentPart->content;
+            $content = trim($contentPart->content);
         } else {
             $content = '';
             $result = [];
@@ -36,48 +50,64 @@ class EmailsConverter
             foreach ($contentParts as $contentPart) {
                 $result[] = htmlspecialchars($contentPart->content);
             }
-            $content = nl2br(implode("\n\n", $result));
+            $content = trim(nl2br(implode("\n\n", $result)));
         }
-        if ($optimize) {
 
-            $getUrlContent = function(string $value) {
-                if (strpos($value, '//') === 0) {
-                    $value = 'http:' . $value;
+        $getUrlContent = function(string $value) {
+            if (strpos($value, '//') === 0) {
+                $value = 'http:' . $value;
+            }
+            if (strpos($value, 'https://') === 0 || strpos($value, 'http://') === 0) {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $value);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+                $result = curl_exec($ch);
+                $error = curl_error($ch);
+                $info = curl_getinfo($ch);
+                curl_close($ch);
+                if (!isset($error{0})) {
+                    return ['content' => $result, 'contentType' => isset($info['content_type']) ? $info['content_type'] : null];
                 }
-                if (strpos($value, 'https://') === 0 || strpos($value, 'http://') === 0) {
-                    $ch = curl_init();
-                    curl_setopt($ch, CURLOPT_URL, $value);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-                    $result = curl_exec($ch);
-                    $error = curl_error($ch);
-                    $info = curl_getinfo($ch);
-                    curl_close($ch);
-                    if (!isset($error{0})) {
-                        return ['content' => $result, 'contentType' => isset($info['content_type']) ? $info['content_type'] : null];
+            }
+            return ['content' => null, 'contentType' => null];
+        };
+
+        $getDataURI = function(string $value) use ($getUrlContent) {
+            if (strpos($value, 'data:') === 0) {
+                return $value;
+            }
+            $result = $getUrlContent($value);
+            if (strlen($result['content']) > 0) {
+                return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
+            }
+            return '';
+        };
+
+        if ($inlineCSS) {
+            if (strlen($content) > 0) {
+                $dom = new HTML5DOMDocument();
+                $dom->loadHTML($content);
+                $elements = $dom->querySelectorAll('link[rel="stylesheet"]');
+                $cssStyles = [];
+                foreach ($elements as $element) {
+                    $href = (string) $element->getAttribute('href');
+                    if (strlen($href) > 0) {
+                        $cssStyles[] = trim((string) $getUrlContent($href)['content']);
                     }
                 }
-                return ['content' => null, 'contentType' => null];
-            };
+                $cssToInlineStyles = new \TijsVerkoyen\CssToInlineStyles\CssToInlineStyles();
+                $content = $cssToInlineStyles->convert($content);
+                foreach ($cssStyles as $cssStyle) {
+                    if (strlen($cssStyle) > 0) {
+                        $content = $cssToInlineStyles->convert($content, $cssStyle);
+                    }
+                }
+            }
+        }
 
-            $dom = new \IvoPetkov\HTML5DOMDocument();
-            $dom->loadHTML($content);
-            $elements = $dom->querySelectorAll('link[rel="stylesheet"]');
-            $cssStyles = [];
-            foreach ($elements as $element) {
-                $href = (string) $element->getAttribute('href');
-                if (strlen($href) > 0) {
-                    $cssStyles[] = trim((string) $getUrlContent($href)['content']);
-                }
-            }
-            $cssToInlineStyles = new \TijsVerkoyen\CssToInlineStyles\CssToInlineStyles();
-            $content = $cssToInlineStyles->convert($content);
-            foreach ($cssStyles as $cssStyle) {
-                if (strlen($cssStyle) > 0) {
-                    $content = $cssToInlineStyles->convert($content, $cssStyle);
-                }
-            }
+        if ($sanitize) {
             $matches = null;
             preg_match_all('/href\=\"(skype|mailto|tel)\:(.*?)\"/', $content, $matches);
             $replacedTexts = [];
@@ -87,7 +117,7 @@ class EmailsConverter
                 $content = str_replace($match, $replacement, $content);
             }
             $config = \HTMLPurifier_Config::createDefault();
-            $config->set('Attr.AllowedRel', ['nofollow', 'publisher']);
+            $config->set('Attr.AllowedRel', ['nofollow', 'noopener', 'publisher']);
             $config->set('Cache.SerializerPath', sys_get_temp_dir());
             $purifier = new \HTMLPurifier($config);
             $content = $purifier->purify($content);
@@ -95,31 +125,29 @@ class EmailsConverter
                 $content = str_replace($replacement, $match, $content);
             }
         }
-        $dom = new \IvoPetkov\HTML5DOMDocument();
+
+        $dom = new HTML5DOMDocument();
         $dom->loadHTML($content);
-        if ($optimize) {
 
-            $getDataURI = function(string $value) use ($getUrlContent) {
-                if (strpos($value, 'data:') === 0) {
-                    return $value;
-                }
-                $result = $getUrlContent($value);
-                if (strlen($result['content']) > 0) {
-                    return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
-                }
-                return '';
-            };
-
+        if ($embedImages || $removeImages) {
             $elements = $dom->querySelectorAll('[src]');
             foreach ($elements as $element) {
                 $src = (string) $element->getAttribute('src');
-                $newSrc = $getDataURI($src);
-                if (strlen($newSrc) > 0) {
-                    $element->setAttribute('src', $newSrc);
+                $newSrc = $src;
+                if ($embedImages) {
+                    $newSrc = $getDataURI($src);
+                    if (strlen($newSrc) > 0) {
+                        $element->setAttribute('src', $newSrc);
+                    } else {
+                        $element->removeAttribute('src');
+                    }
                 } else {
+                    $newSrc = '';
                     $element->removeAttribute('src');
                 }
-                $element->setAttribute('data-emails-converter-original-src', $src);
+                if ($src !== $newSrc) {
+                    $element->setAttribute('data-emails-converter-original-src', $src);
+                }
             }
             $elements = $dom->querySelectorAll('[style]');
             foreach ($elements as $element) {
@@ -129,9 +157,13 @@ class EmailsConverter
                 preg_match_all('/url\([\'"]*(.*?)[\'"]*\)/', $newStyle, $matches);
                 if (isset($matches[1])) {
                     foreach ($matches[1] as $index => $match) {
-                        $newValue = $getDataURI($match);
-                        if (strlen($newValue) > 0) {
-                            $newStyle = str_replace($match, $newValue, $style);
+                        if ($embedImages) {
+                            $newValue = $getDataURI($match);
+                            if (strlen($newValue) > 0) {
+                                $newStyle = str_replace($match, $newValue, $style);
+                            } else {
+                                $newStyle = str_replace($matches[0][$index], 'none', $style);
+                            }
                         } else {
                             $newStyle = str_replace($matches[0][$index], 'none', $style);
                         }
@@ -142,16 +174,23 @@ class EmailsConverter
                     $element->setAttribute('data-emails-converter-original-style', $style);
                 }
             }
+        }
+
+        if ($inlineCSS) {
             $elements = $dom->querySelectorAll('[class]');
             foreach ($elements as $element) {
                 $element->removeAttribute('class');
             }
+        }
+
+        if ($secureLinks) {
             $elements = $dom->querySelectorAll('a[href]');
             foreach ($elements as $element) {
                 $element->setAttribute('rel', 'noopener');
                 $element->setAttribute('target', '_blank');
             }
         }
+
         return $dom->saveHTML();
     }
 
