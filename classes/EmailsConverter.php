@@ -249,10 +249,10 @@ class EmailsConverter
         return $email;
     }
 
-    public function rawToHTML(string $raw): string
+    public function rawToHTML(string $raw, $options = []): string
     {
         $email = $this->rawToEmail($raw);
-        return $this->emailToHTML($email);
+        return $this->emailToHTML($email, $options);
     }
 
     public function rawToText(string $raw): string
