@@ -41,13 +41,13 @@ class EmailsConverter
 
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
         if ($contentPart !== null) {
-            $content = trim($contentPart->content);
+            $content = $this->getContentPartContentInUTF8($contentPart);
         } else {
             $content = '';
             $result = [];
             $contentParts = $email->content->getList();
             foreach ($contentParts as $contentPart) {
-                $result[] = htmlspecialchars($contentPart->content, ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
+                $result[] = htmlspecialchars($this->getContentPartContentInUTF8($contentPart), ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
             }
             $content = trim(nl2br(implode("\n\n", $result)));
         }
@@ -216,7 +216,7 @@ class EmailsConverter
     {
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/plain')->getFirst();
         if ($contentPart !== null) {
-            return trim($contentPart->content);
+            return trim($this->getContentPartContentInUTF8($contentPart));
         }
         $html = $this->emailToHTML($email);
         return trim($this->htmlToText($html));
@@ -283,6 +283,18 @@ class EmailsConverter
     {
         $html2Text = new \Html2Text\Html2Text($html);
         return $html2Text->getText();
+    }
+
+    private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart)
+    {
+        $content = $contentPart->content;
+        if (strlen($contentPart->encoding) > 0) {
+            $content = mb_convert_encoding($content, 'utf-8', $contentPart->encoding);
+            $content = str_replace('charset=' . $contentPart->encoding . '', 'charset=utf8', $content);
+            $content = str_replace('charset="' . $contentPart->encoding . '"', '"charset=utf8"', $content);
+            $content = str_replace('charset=\'' . $contentPart->encoding . '\'', '\'charset=utf8\'', $content);
+        }
+        return $content;
     }
 
 }
