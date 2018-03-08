@@ -292,7 +292,7 @@ class EmailsConverter
             $emailParser = new \IvoPetkov\EmailParser();
             $content = $emailParser->convertEncoding($content, 'utf-8', $contentPart->encoding);
             if ($isHtml) {
-                $content = preg_replace('/<meta(.*?)charset=(["\']*)([a-zA-Z0-9\-\_]+)(["\']*)(.*?)>/i', '<meta$1charset=$2utf8$4$5>', $content);
+                $content = preg_replace('/<meta(.*?)charset=(["\']*)([a-zA-Z0-9\-\_]+)(["\']*)(.*?)>/i', '<meta$1charset=$2utf-8$4$5>', $content);
             }
         }
         return $content;
