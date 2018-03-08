@@ -47,7 +47,7 @@ class EmailsConverter
             $result = [];
             $contentParts = $email->content->getList();
             foreach ($contentParts as $contentPart) {
-                $result[] = htmlspecialchars($this->getContentPartContentInUTF8($contentPart->content), ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
+                $result[] = htmlspecialchars($this->getContentPartContentInUTF8($contentPart), ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
             }
             $content = trim(nl2br(implode("\n\n", $result)));
         }
