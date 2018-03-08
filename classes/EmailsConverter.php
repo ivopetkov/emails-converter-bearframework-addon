@@ -288,7 +288,7 @@ class EmailsConverter
     private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart)
     {
         $content = $contentPart->content;
-        if (strlen($contentPart->encoding) > 0) {
+        if (strlen($contentPart->encoding) > 0 && strtolower(mb_detect_encoding($content)) !== 'utf-8') {
             $content = mb_convert_encoding($content, 'utf-8', $contentPart->encoding);
             $content = str_replace('charset=' . $contentPart->encoding . '', 'charset=utf8', $content);
             $content = str_replace('charset="' . $contentPart->encoding . '"', '"charset=utf8"', $content);
