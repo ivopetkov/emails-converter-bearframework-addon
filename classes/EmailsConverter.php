@@ -41,13 +41,13 @@ class EmailsConverter
 
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
         if ($contentPart !== null) {
-            $content = $this->getContentPartContentInUTF8($contentPart);
+            $content = $this->getContentPartContentInUTF8($contentPart, true);
         } else {
             $content = '';
             $result = [];
             $contentParts = $email->content->getList();
             foreach ($contentParts as $contentPart) {
-                $result[] = htmlspecialchars($this->getContentPartContentInUTF8($contentPart), ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
+                $result[] = htmlspecialchars($this->getContentPartContentInUTF8($contentPart->content), ENT_COMPAT | ENT_HTML5 | ENT_SUBSTITUTE);
             }
             $content = trim(nl2br(implode("\n\n", $result)));
         }
@@ -285,14 +285,15 @@ class EmailsConverter
         return $html2Text->getText();
     }
 
-    private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart)
+    private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart, bool $isHtml = false)
     {
         $content = $contentPart->content;
-        if (strlen($contentPart->encoding) > 0 && strtolower(mb_detect_encoding($content)) !== 'utf-8') {
-            $content = mb_convert_encoding($content, 'utf-8', $contentPart->encoding);
-            $content = str_replace('charset=' . $contentPart->encoding . '', 'charset=utf8', $content);
-            $content = str_replace('charset="' . $contentPart->encoding . '"', '"charset=utf8"', $content);
-            $content = str_replace('charset=\'' . $contentPart->encoding . '\'', '\'charset=utf8\'', $content);
+        if (strlen($contentPart->encoding) > 0) {// && strtolower(mb_detect_encoding($content)) !== 'utf-8'
+            $emailParser = new \IvoPetkov\EmailParser();
+            $content = $emailParser->convertEncoding($content, 'utf-8', $contentPart->encoding);
+            if ($isHtml) {
+                $content = preg_replace('/<meta(.*?)charset=(["\']*)([a-zA-Z0-9\-\_]+)(["\']*)(.*?)>/i', '<meta$1charset=$2utf8$4$5>', $content);
+            }
         }
         return $content;
     }
