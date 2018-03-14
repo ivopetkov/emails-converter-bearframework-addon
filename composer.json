@@ -14,7 +14,7 @@
     "require": {
         "php": ">=7.1",
         "bearframework/bearframework": "0.10.*",
-        "bearframework/emails-addon": "0.5.*",
+        "bearframework/emails-addon": "0.5.*|0.6.*",
         "ivopetkov/swiftmailer-bearframework-addon": "0.1.*",
         "ivopetkov/email-parser": "dev-master",
         "ezyang/htmlpurifier": "4.*",
