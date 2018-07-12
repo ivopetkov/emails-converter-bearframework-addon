@@ -250,8 +250,8 @@ class EmailsConverter
         foreach ($data['content'] as $contentPart) {
             $email->content->add($contentPart['content'], $contentPart['mimeType'], $contentPart['encoding']);
         }
-        foreach ($data['attachments'] as $attachments) {
-            $email->attachments->addContent((string) $attachments['content'], $attachments['name'], $attachments['mimeType']);
+        foreach ($data['attachments'] as $attachment) {
+            $email->attachments->addContent((string) $attachment['content'], $attachment['name'], $attachment['mimeType']);
         }
         foreach ($data['embeds'] as $embed) {
             $email->embeds->addContent((string) $embed['id'], (string) $embed['content'], $embed['name'], $embed['mimeType']);
