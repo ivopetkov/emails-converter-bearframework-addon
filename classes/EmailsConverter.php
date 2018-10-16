@@ -52,6 +52,36 @@ class EmailsConverter
             $content = trim(nl2br(implode("\n\n", $result)));
         }
 
+        $emailAccountToText = function($emailAccount) {
+            if (strlen($emailAccount->name) > 0) {
+                return $emailAccount->name . ' <' . $emailAccount->email . '>';
+            } else {
+                return $emailAccount->email;
+            }
+        };
+        $embeds = $email->embeds->getList();
+        foreach ($embeds as $embed) {
+            if ($embed->mimeType === 'message/rfc822') {
+                $embedEmail = $this->rawToEmail($embed->content);
+                $embedEmailRecipientsList = $embedEmail->recipients->getList();
+                $embedEmailRecipientsText = [];
+                foreach ($embedEmailRecipientsList as $embedEmailRecipient) {
+                    $embedEmailRecipientsText[] = $emailAccountToText($embedEmailRecipient);
+                }
+                $embedEmailContent = $this->emailToHTML($embedEmail, $options);
+                $appendContent = '<br><br>' . nl2br(htmlspecialchars('---------- Forwarded message ----------
+From: ' . $emailAccountToText($embedEmail->sender) . '
+Date: ' . (strlen($embedEmail->date) > 0 ? date('M j, Y', $embedEmail->date).' at '.date('H:i', $embedEmail->date) : '') . '
+Subject: ' . $embedEmail->subject . '
+To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
+                $dom = new HTML5DOMDocument();
+                $dom->loadHTML($content);
+                $dom->insertHTML($appendContent);
+                $dom->insertHTML($embedEmailContent);
+                $content = $dom->saveHTML();
+            }
+        }
+
         $getUrlContent = function(string $value) {
             if (strpos($value, '//') === 0) {
                 $value = 'http:' . $value;
