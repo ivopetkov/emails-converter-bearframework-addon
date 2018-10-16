@@ -18,6 +18,11 @@ use IvoPetkov\HTML5DOMDocument;
 class EmailsConverter
 {
 
+    /**
+     * 
+     * @param \BearFramework\Emails\Email $email
+     * @return string
+     */
     public function emailToRaw(\BearFramework\Emails\Email $email): string
     {
         $app = App::get();
@@ -71,7 +76,7 @@ class EmailsConverter
                 $embedEmailContent = $this->emailToHTML($embedEmail, $options);
                 $appendContent = '<br><br>' . nl2br(htmlspecialchars('---------- Forwarded message ----------
 From: ' . $emailAccountToText($embedEmail->sender) . '
-Date: ' . (strlen($embedEmail->date) > 0 ? date('M j, Y', $embedEmail->date).' at '.date('H:i', $embedEmail->date) : '') . '
+Date: ' . (strlen($embedEmail->date) > 0 ? date('M j, Y', $embedEmail->date) . ' at ' . date('H:i', $embedEmail->date) : '') . '
 Subject: ' . $embedEmail->subject . '
 To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 $dom = new HTML5DOMDocument();
@@ -242,6 +247,11 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         return $dom->saveHTML();
     }
 
+    /**
+     * 
+     * @param \BearFramework\Emails\Email $email
+     * @return string
+     */
     public function emailToText(\BearFramework\Emails\Email $email): string
     {
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/plain')->getFirst();
@@ -252,6 +262,11 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         return trim($this->htmlToText($html));
     }
 
+    /**
+     * 
+     * @param string $raw
+     * @return \BearFramework\Emails\Email
+     */
     public function rawToEmail(string $raw): \BearFramework\Emails\Email
     {
         $app = App::get();
@@ -297,24 +312,46 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         return $email;
     }
 
+    /**
+     * 
+     * @param string $raw
+     * @param type $options
+     * @return string
+     */
     public function rawToHTML(string $raw, $options = []): string
     {
         $email = $this->rawToEmail($raw);
         return $this->emailToHTML($email, $options);
     }
 
+    /**
+     * 
+     * @param string $raw
+     * @return string
+     */
     public function rawToText(string $raw): string
     {
         $email = $this->rawToEmail($raw);
         return $this->emailToText($email);
     }
 
+    /**
+     * 
+     * @param string $html
+     * @return string
+     */
     public function htmlToText(string $html): string
     {
         $html2Text = new \Html2Text\Html2Text($html);
         return $html2Text->getText();
     }
 
+    /**
+     * 
+     * @param \BearFramework\Emails\Email\ContentPart $contentPart
+     * @param bool $isHtml
+     * @return type
+     */
     private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart, bool $isHtml = false)
     {
         $content = $contentPart->content;
