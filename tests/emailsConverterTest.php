@@ -45,29 +45,29 @@ class EmailsConverterTest extends BearFramework\AddonTests\PHPUnitTestCase
         $this->assertEquals($email->returnPath, $email2->returnPath);
         $this->assertEquals($email->priority, $email2->priority);
         $this->assertEquals($listToArray($email->recipients), $listToArray($email2->recipients));
-        $this->assertEquals($email->content->getList()[0]->content, $email2->content->getList()[0]->content);
+        $this->assertEquals($this->fixNewLines($email->content->getList()[0]->content), $this->fixNewLines($email2->content->getList()[0]->content));
         $this->assertEquals($email->content->getList()[0]->mimeType, $email2->content->getList()[0]->mimeType);
-        $this->assertEquals($email->content->getList()[1]->content, $email2->content->getList()[1]->content);
+        $this->assertEquals($this->fixNewLines($email->content->getList()[1]->content), $this->fixNewLines($email2->content->getList()[1]->content));
         $this->assertEquals($email->content->getList()[1]->encoding, $email2->content->getList()[1]->encoding);
         $this->assertEquals($email->content->getList()[1]->mimeType, $email2->content->getList()[1]->mimeType);
 
         $this->assertTrue($email2->attachments->getList()[0] instanceof \BearFramework\Emails\Email\ContentAttachment);
-        $this->assertEquals($email2->attachments->getList()[0]->content, file_get_contents($email->attachments->getList()[0]->filename));
+        $this->assertEquals($this->fixNewLines($email2->attachments->getList()[0]->content), $this->fixNewLines(file_get_contents($email->attachments->getList()[0]->filename)));
         $this->assertEquals($email2->attachments->getList()[0]->mimeType, $email->attachments->getList()[0]->mimeType);
         $this->assertEquals($email2->attachments->getList()[0]->name, $email->attachments->getList()[0]->name);
         $this->assertTrue($email2->attachments->getList()[1] instanceof \BearFramework\Emails\Email\ContentAttachment);
-        $this->assertEquals($email2->attachments->getList()[1]->content, $email->attachments->getList()[1]->content);
+        $this->assertEquals($this->fixNewLines($email2->attachments->getList()[1]->content), $this->fixNewLines($email->attachments->getList()[1]->content));
         $this->assertEquals($email2->attachments->getList()[1]->mimeType, $email->attachments->getList()[1]->mimeType);
         $this->assertEquals($email2->attachments->getList()[1]->name, $email->attachments->getList()[1]->name);
 
         $this->assertTrue($email2->embeds->getList()[0] instanceof \BearFramework\Emails\Email\ContentEmbed);
         $this->assertEquals($email2->embeds->getList()[0]->cid, $email->embeds->getList()[0]->cid);
-        $this->assertEquals($email2->embeds->getList()[0]->content, file_get_contents($email->embeds->getList()[0]->filename));
+        $this->assertEquals($this->fixNewLines($email2->embeds->getList()[0]->content), $this->fixNewLines(file_get_contents($email->embeds->getList()[0]->filename)));
         $this->assertEquals($email2->embeds->getList()[0]->mimeType, $email->embeds->getList()[0]->mimeType);
         $this->assertEquals($email2->embeds->getList()[0]->name, $email->embeds->getList()[0]->name);
         $this->assertTrue($email2->embeds->getList()[1] instanceof \BearFramework\Emails\Email\ContentEmbed);
         $this->assertEquals($email2->embeds->getList()[1]->cid, $email->embeds->getList()[1]->cid);
-        $this->assertEquals($email2->embeds->getList()[1]->content, $email->embeds->getList()[1]->content);
+        $this->assertEquals($this->fixNewLines($email2->embeds->getList()[1]->content), $this->fixNewLines($email->embeds->getList()[1]->content));
         $this->assertEquals($email2->embeds->getList()[1]->mimeType, $email->embeds->getList()[1]->mimeType);
         $this->assertEquals($email2->embeds->getList()[1]->name, $email->embeds->getList()[1]->name);
         $email2Headers = $email2->headers->getList();
@@ -284,7 +284,7 @@ t4AX
         $email->recipients->add('recipient1@example.com', 'Mark Smith');
         $email->recipients->add('recipient2@example.com', 'Bill Smith');
         if ($addTextContent) {
-            $email->content->add('Hi,' . PHP_EOL . 'Welcome to our service.' . PHP_EOL . 'Best regards,' . PHP_EOL . 'John' . PHP_EOL . 'example.com' . PHP_EOL . '(text version)', 'text/plain');
+            $email->content->add('Hi,' . "\n" . 'Welcome to our service.' . "\n" . 'Best regards,' . "\n" . 'John' . "\n" . 'example.com' . "\n" . '(text version)', 'text/plain');
         }
         if ($addHTMLContent) {
             $html = '<html>
@@ -304,7 +304,7 @@ t4AX
         (html version)
     </body>
 </html>';
-            $html = str_replace(["\r\n", "\n"], PHP_EOL, $html);
+            $html = str_replace("\r\n", "\n", $html);
             $email->content->add($html, 'text/html', 'utf-8');
         }
         $this->makeSampleFile($tempDir . 'file1.jpg', 'jpg');
@@ -322,8 +322,7 @@ t4AX
 
     private function fixNewLines($text)
     {
-        $text = str_replace(["\r\n", "\n"], '-new-line-', $text);
-        return str_replace('-new-line-', PHP_EOL, $text);
+        return str_replace("\r\n", "\n", $text);
     }
 
 }
