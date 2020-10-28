@@ -80,7 +80,7 @@ Date: ' . (strlen($embedEmail->date) > 0 ? date('M j, Y', $embedEmail->date) . '
 Subject: ' . $embedEmail->subject . '
 To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 $dom = new HTML5DOMDocument();
-                $dom->loadHTML($content);
+                $dom->loadHTML($content, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
                 $dom->insertHTML($appendContent);
                 $dom->insertHTML($embedEmailContent);
                 $content = $dom->saveHTML();
@@ -131,7 +131,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         if ($inlineCSS) {
             if (strlen($content) > 0) {
                 $dom = new HTML5DOMDocument();
-                $dom->loadHTML($content);
+                $dom->loadHTML($content, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
                 $elements = $dom->querySelectorAll('link[rel="stylesheet"]');
                 $cssStyles = [];
                 foreach ($elements as $element) {
@@ -180,7 +180,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         }
 
         $dom = new HTML5DOMDocument();
-        $dom->loadHTML($content);
+        $dom->loadHTML($content, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
 
         if ($embedImages || $removeImages) {
             $elements = $dom->querySelectorAll('[src]');

@@ -1,7 +1,12 @@
 {
     "name": "ivopetkov/emails-converter-bearframework-addon",
     "description": "Emails converter addon for Bear Framework",
-    "keywords": ["emails", "converter", "addon", "Bear Framework"],
+    "keywords": [
+        "emails",
+        "converter",
+        "addon",
+        "Bear Framework"
+    ],
     "homepage": "https://github.com/ivopetkov/emails-converter-bearframework-addon",
     "license": "MIT",
     "authors": [
@@ -13,20 +18,21 @@
     ],
     "require": {
         "php": ">=7.1",
-        "bearframework/bearframework": "0.10.*",
-        "bearframework/emails-addon": "0.5.*|0.6.*",
+        "bearframework/bearframework": "1.*",
+        "bearframework/emails-addon": "0.5.*|0.6.*|0.7.*",
         "ivopetkov/swiftmailer-bearframework-addon": "0.1.*",
         "ivopetkov/email-parser": "dev-master",
         "ezyang/htmlpurifier": "4.*",
         "html2text/html2text": "4.*",
-        "ivopetkov/html5-dom-document-php": "1.*",
+        "ivopetkov/html5-dom-document-php": "2.*",
         "tijsverkoyen/css-to-inline-styles": "2.*"
     },
     "require-dev": {
-        "bearframework/addon-tests": "0.1.*",
-        "phpunit/phpunit": "7.*"
+        "bearframework/addon-tests": "0.3.*"
     },
     "autoload": {
-        "files": ["autoload.php"]
+        "files": [
+            "autoload.php"
+        ]
     }
 }
