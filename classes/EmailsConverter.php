@@ -101,7 +101,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 $error = curl_error($ch);
                 $info = curl_getinfo($ch);
                 curl_close($ch);
-                if (!isset($error{0})) {
+                if (!isset($error[0])) {
                     return ['content' => $result, 'contentType' => isset($info['content_type']) ? $info['content_type'] : null];
                 }
             }
