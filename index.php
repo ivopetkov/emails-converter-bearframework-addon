@@ -10,11 +10,11 @@
 use BearFramework\App;
 
 $app = App::get();
-$context = $app->context->get(__FILE__);
+$context = $app->contexts->get(__FILE__);
 
 $context->classes->add('IvoPetkov\BearFrameworkAddons\EmailsConverter', 'classes/EmailsConverter.php');
 
 $app->shortcuts
-        ->add('emailsConverter', function() {
-            return new IvoPetkov\BearFrameworkAddons\EmailsConverter();
-        });
+    ->add('emailsConverter', function () {
+        return new IvoPetkov\BearFrameworkAddons\EmailsConverter();
+    });
