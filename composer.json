@@ -21,7 +21,7 @@
         "bearframework/bearframework": "1.*",
         "bearframework/emails-addon": "0.5.*|0.6.*|0.7.*",
         "ivopetkov/swiftmailer-bearframework-addon": "0.1.*",
-        "ivopetkov/email-parser": "0.1.*",
+        "ivopetkov/email-parser": "0.2.*",
         "ezyang/htmlpurifier": "4.*",
         "html2text/html2text": "4.*",
         "ivopetkov/html5-dom-document-php": "2.*",

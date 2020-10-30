@@ -271,7 +271,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
     {
         $app = App::get();
         $emailParser = new \IvoPetkov\EmailParser();
-        $data = $emailParser->parse($raw);
+        $data = $emailParser->parse($raw, true);
 
         $email = $app->emails->make();
         $email->date = strlen($data['date']) > 0 ? (int) $data['date'] : null;
