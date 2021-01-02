@@ -19,16 +19,16 @@
     "require": {
         "php": ">=7.1",
         "bearframework/bearframework": "1.*",
-        "bearframework/emails-addon": "0.5.*|0.6.*|0.7.*",
-        "ivopetkov/swiftmailer-bearframework-addon": "0.1.*",
-        "ivopetkov/email-parser": "0.2.*",
+        "bearframework/emails-addon": "1.*",
+        "ivopetkov/swiftmailer-bearframework-addon": "1.*",
+        "ivopetkov/email-parser": "1.*",
         "ezyang/htmlpurifier": "4.*",
         "html2text/html2text": "4.*",
         "ivopetkov/html5-dom-document-php": "2.*",
         "tijsverkoyen/css-to-inline-styles": "2.*"
     },
     "require-dev": {
-        "bearframework/addon-tests": "0.3.*"
+        "bearframework/addon-tests": "1.*"
     },
     "autoload": {
         "files": [
