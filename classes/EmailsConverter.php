@@ -57,12 +57,13 @@ class EmailsConverter
             $content = trim(nl2br(implode("\n\n", $result)));
         }
 
-        $emailAccountToText = function($emailAccount) {
-            if (strlen($emailAccount->name) > 0) {
-                return $emailAccount->name . ' <' . $emailAccount->email . '>';
-            } else {
-                return $emailAccount->email;
+        $emailAccountToText = function ($emailAccount): string {
+            $name = (string)$emailAccount->name;
+            $email = (string)$emailAccount->email;
+            if (strlen($name) > 0) {
+                return $name . ' <' . $email . '>';
             }
+            return $email;
         };
         $embeds = $email->embeds->getList();
         foreach ($embeds as $embed) {
@@ -87,7 +88,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
             }
         }
 
-        $getUrlContent = function(string $value) {
+        $getURLContent = function (string $value): array {
             if (strpos($value, '//') === 0) {
                 $value = 'http:' . $value;
             }
@@ -97,8 +98,8 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 20);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-                $result = curl_exec($ch);
-                $error = curl_error($ch);
+                $result = (string)curl_exec($ch);
+                $error = (string)curl_error($ch);
                 $info = curl_getinfo($ch);
                 curl_close($ch);
                 if (!isset($error[0])) {
@@ -108,20 +109,20 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
             return ['content' => null, 'contentType' => null];
         };
 
-        $getDataURI = function(string $value) use ($getUrlContent, $email) {
+        $getDataURI = function (string $value) use ($getURLContent, $email): string {
             if (strpos($value, 'data:') === 0) {
                 return $value;
             }
             if (strpos($value, 'cid:') === 0) {
                 $embed = $email->embeds->getList()
-                        ->filterBy('cid', substr($value, 4))
-                        ->getFirst();
+                    ->filterBy('cid', substr($value, 4))
+                    ->getFirst();
                 if ($embed !== null) {
                     return 'data:;base64,' . base64_encode($embed->content);
                 }
                 return '';
             }
-            $result = $getUrlContent($value);
+            $result = $getURLContent($value);
             if (strlen($result['content']) > 0) {
                 return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
             }
@@ -137,7 +138,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 foreach ($elements as $element) {
                     $href = (string) $element->getAttribute('href');
                     if (strlen($href) > 0) {
-                        $cssStyles[] = trim((string) $getUrlContent($href)['content']);
+                        $cssStyles[] = trim((string) $getURLContent($href)['content']);
                     }
                 }
                 $cssToInlineStyles = new \TijsVerkoyen\CssToInlineStyles\CssToInlineStyles();
@@ -274,7 +275,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
         $data = $emailParser->parse($raw, true);
 
         $email = $app->emails->make();
-        $email->date = strlen($data['date']) > 0 ? (int) $data['date'] : null;
+        $email->date = $data['date'] !== null && strlen($data['date']) > 0 ? (int) $data['date'] : null;
         $email->subject = $data['subject'];
         foreach ($data['to'] as $recipient) {
             $email->recipients->add($recipient['email'], $recipient['name']);
@@ -350,19 +351,19 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
      * 
      * @param \BearFramework\Emails\Email\ContentPart $contentPart
      * @param bool $isHtml
-     * @return type
+     * @return string
      */
-    private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart, bool $isHtml = false)
+    private function getContentPartContentInUTF8(\BearFramework\Emails\Email\ContentPart $contentPart, bool $isHtml = false): string
     {
-        $content = $contentPart->content;
-        if (strlen($contentPart->encoding) > 0) {// && strtolower(mb_detect_encoding($content)) !== 'utf-8'
+        $content = (string)$contentPart->content;
+        $encoding = (string)$contentPart->encoding;
+        if (strlen($encoding) > 0) { // && strtolower(mb_detect_encoding($content)) !== 'utf-8'
             $emailParser = new \IvoPetkov\EmailParser();
-            $content = $emailParser->convertEncoding($content, 'utf-8', $contentPart->encoding);
+            $content = $emailParser->convertEncoding($content, 'utf-8', $encoding);
             if ($isHtml) {
                 $content = preg_replace('/<meta(.*?)charset=(["\']*)([a-zA-Z0-9\-\_]+)(["\']*)(.*?)>/i', '<meta$1charset=$2utf-8$4$5>', $content);
             }
         }
         return $content;
     }
-
 }
