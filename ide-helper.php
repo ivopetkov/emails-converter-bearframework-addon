@@ -14,7 +14,5 @@ namespace BearFramework {
      */
     class App
     {
-        
     }
-
 }
