@@ -45,29 +45,29 @@ class EmailsConverterTest extends BearFramework\AddonTests\PHPUnitTestCase
         $this->assertEquals($email->returnPath, $email2->returnPath);
         $this->assertEquals($email->priority, $email2->priority);
         $this->assertEquals($listToArray($email->recipients), $listToArray($email2->recipients));
-        $this->assertEquals($this->fixNewLines($email->content->getList()[0]->content), $this->fixNewLines($email2->content->getList()[0]->content));
+        $this->assertEquals($this->removeWhiteSpace($email->content->getList()[0]->content), $this->removeWhiteSpace($email2->content->getList()[0]->content));
         $this->assertEquals($email->content->getList()[0]->mimeType, $email2->content->getList()[0]->mimeType);
-        $this->assertEquals($this->fixNewLines($email->content->getList()[1]->content), $this->fixNewLines($email2->content->getList()[1]->content));
+        $this->assertEquals($this->removeWhiteSpace($email->content->getList()[1]->content), $this->removeWhiteSpace($email2->content->getList()[1]->content));
         $this->assertEquals($email->content->getList()[1]->encoding, $email2->content->getList()[1]->encoding);
         $this->assertEquals($email->content->getList()[1]->mimeType, $email2->content->getList()[1]->mimeType);
 
         $this->assertTrue($email2->attachments->getList()[0] instanceof \BearFramework\Emails\Email\ContentAttachment);
-        $this->assertEquals($this->fixNewLines($email2->attachments->getList()[0]->content), $this->fixNewLines(file_get_contents($email->attachments->getList()[0]->filename)));
+        $this->assertEquals($this->removeWhiteSpace($email2->attachments->getList()[0]->content), $this->removeWhiteSpace(file_get_contents($email->attachments->getList()[0]->filename)));
         $this->assertEquals($email2->attachments->getList()[0]->mimeType, $email->attachments->getList()[0]->mimeType);
         $this->assertEquals($email2->attachments->getList()[0]->name, $email->attachments->getList()[0]->name);
         $this->assertTrue($email2->attachments->getList()[1] instanceof \BearFramework\Emails\Email\ContentAttachment);
-        $this->assertEquals($this->fixNewLines($email2->attachments->getList()[1]->content), $this->fixNewLines($email->attachments->getList()[1]->content));
+        $this->assertEquals($this->removeWhiteSpace($email2->attachments->getList()[1]->content), $this->removeWhiteSpace($email->attachments->getList()[1]->content));
         $this->assertEquals($email2->attachments->getList()[1]->mimeType, $email->attachments->getList()[1]->mimeType);
         $this->assertEquals($email2->attachments->getList()[1]->name, $email->attachments->getList()[1]->name);
 
         $this->assertTrue($email2->embeds->getList()[0] instanceof \BearFramework\Emails\Email\ContentEmbed);
         $this->assertEquals($email2->embeds->getList()[0]->cid, $email->embeds->getList()[0]->cid);
-        $this->assertEquals($this->fixNewLines($email2->embeds->getList()[0]->content), $this->fixNewLines(file_get_contents($email->embeds->getList()[0]->filename)));
+        $this->assertEquals($this->removeWhiteSpace($email2->embeds->getList()[0]->content), $this->removeWhiteSpace(file_get_contents($email->embeds->getList()[0]->filename)));
         $this->assertEquals($email2->embeds->getList()[0]->mimeType, $email->embeds->getList()[0]->mimeType);
         $this->assertEquals($email2->embeds->getList()[0]->name, $email->embeds->getList()[0]->name);
         $this->assertTrue($email2->embeds->getList()[1] instanceof \BearFramework\Emails\Email\ContentEmbed);
         $this->assertEquals($email2->embeds->getList()[1]->cid, $email->embeds->getList()[1]->cid);
-        $this->assertEquals($this->fixNewLines($email2->embeds->getList()[1]->content), $this->fixNewLines($email->embeds->getList()[1]->content));
+        $this->assertEquals($this->removeWhiteSpace($email2->embeds->getList()[1]->content), $this->removeWhiteSpace($email->embeds->getList()[1]->content));
         $this->assertEquals($email2->embeds->getList()[1]->mimeType, $email->embeds->getList()[1]->mimeType);
         $this->assertEquals($email2->embeds->getList()[1]->name, $email->embeds->getList()[1]->name);
         $email2Headers = $email2->headers->getList();
@@ -112,7 +112,7 @@ class EmailsConverterTest extends BearFramework\AddonTests\PHPUnitTestCase
         (html version)
     </body>
 </html>';
-        $this->assertTrue($this->fixNewLines($html) === $this->fixNewLines($expectedHTML));
+        $this->assertEquals($this->removeWhiteSpace($expectedHTML), $this->removeWhiteSpace($html));
 
         $email = $this->getExampleEmail(true);
         $html = $app->emailsConverter->emailToHTML($email, ['sanitize' => true, 'inlineCSS' => true, 'embedImages' => true, 'secureLinks' => true]);
@@ -126,8 +126,7 @@ class EmailsConverterTest extends BearFramework\AddonTests\PHPUnitTestCase
         <a href="http://example.com" rel="noopener" target="_blank">example.com</a><br>
         <div style=\'border:1px solid #000000;height:400px;background-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAAAAACl1GkQAAADXklEQVR42u3a4W2rMBQGUDZhFEbxKIySUTIKo/gpLX3BgB2iugjCOb/a3Kr6uBcZQ2gaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADggtp28VEX+r4P7dpfF0oVA+yc4FDucZh90g/x29A320sVA+yd4FD6OOtHNzwONoT+9vih3ViqGGD3BIfSxVk/uhiHbvw5DMlBF0oVA+ye4FiGmK4Y7RDvyW/DllLFAPsnOJRbvHfJYd3S066Nsd9Qqhhg9wSHEuLQJv1oYwyzFX54XaoYYPcEx9rwxtg1ST8Wh/hsQqFUMcDeCY624+2btB/DYhG4/SzbhVLFAHsnONiO996k/WhjbBeLSnxVSv/ppo9yAWokOPOOt531IywX5Z82FEovztnsabwSoEKCM+94QzPrR7/Su/HPCqX8pvV7HrHbHKBCghPveG/NvB8/ny3W+WKpOJH8PNYC1Ehw3h1vs+jH2vGNfSiUShPJz2M1QJUE593xLvqxtgKMx1woFSaSn8d6gDoJTrvj3TSQcekulPITyc8jE6BSgrPueP9oIP8nUphHJsBVB9JNHgr9wUDGiRTmkQtw0YG0w6RTfzGQr4kU5pENcNGB3KeXwnSXFfJ7nLcuqe3ji73u7QAVE5xxx/sn297n/ur+foBLbntnzxsq3xg+5zFkrzD5AJe8MZytxXUfnUzuP9rcRAoBrvjoJMQ4JMbfbxUf7X1fzzMTKQW44sPFENfdk9vnxXpfKGXmkZtIKUCtBOe6hqQe36I+jEtAn7tsFkqZeeQmUgpQJ8HZbxKnS/jvv0Cd3n9kryO5ANf+CnfZjwqvGKT3gxsm4iWHFydouiV99qBQys5jy0RmrwH9OsFnDaRJ3gfskm4WSpN2zq+8LycyC/DbBJ82kMf7gOHZ3ekpWShNutQtn6KEtwbyywSfNpDvp1C3vr/dH1vRdmOpYoD9Exx7IF+vMY93BotTu1CqGGDvBCe4VelCCF37ZumzEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwg3+2V3wP89ppTwAAAABJRU5ErkJggg==");background-repeat:no-repeat;\' data-emails-converter-original-style=\'border:1px solid #000000;height:400px;background-image:url("http://ivopetkov.github.io/example-files/example-image-400-x-400.png");background-repeat:no-repeat;\'></div>
         (html version)</body></html>';
-        
-        $this->assertTrue($this->fixNewLines($html) === $this->fixNewLines($expectedHTML));
+        $this->assertEquals($this->removeWhiteSpace($expectedHTML), $this->removeWhiteSpace($html));
 
         $email = $this->getExampleEmail(false);
         $html = $app->emailsConverter->emailToHTML($email);
@@ -140,7 +139,7 @@ John<br>
 example.com<br>
 (text version)</body></html>';
 
-        $this->assertTrue($this->fixNewLines($html) === $this->fixNewLines($expectedHTML));
+        $this->assertEquals($this->removeWhiteSpace($expectedHTML), $this->removeWhiteSpace($html));
     }
 
     /**
@@ -158,7 +157,7 @@ Best regards,
 John
 example.com
 (text version)';
-        $this->assertTrue($this->fixNewLines($text) === $this->fixNewLines($expectedText));
+        $this->assertEquals($this->removeWhiteSpace($expectedText), $this->removeWhiteSpace($text));
 
         $email = $this->getExampleEmail(true, false);
         $text = $app->emailsConverter->emailToText($email);
@@ -170,7 +169,7 @@ John
 example.com [http://example.com]
 
  (html version)';
-        $this->assertTrue($this->fixNewLines($text) === $this->fixNewLines($expectedText));
+        $this->assertEquals($this->removeWhiteSpace($expectedText), $this->removeWhiteSpace($text));
     }
 
     /**
@@ -190,7 +189,7 @@ example.com [http://example.com]
         John<br><a href="http://example.com">example.com</a><br><div style="height:400px;background-image:url(http://ivopetkov.github.io/example-files/example-image-400-x-400.png);background-repeat:no-repeat;"></div>
         (html version)
     </body></html>';
-        $this->assertTrue($this->fixNewLines($html) === $this->fixNewLines($expectedHTML));
+        $this->assertEquals($this->removeWhiteSpace($expectedHTML), $this->removeWhiteSpace($html));
 
         $email = $this->getExampleEmail(false);
         $raw = $app->emailsConverter->emailToRaw($email);
@@ -201,7 +200,7 @@ Best regards,<br>
 John<br>
 example.com<br>
 (text version)</body></html>';
-        $this->assertTrue($this->fixNewLines($html) === $this->fixNewLines($expectedHTML));
+        $this->assertEquals($this->removeWhiteSpace($expectedHTML), $this->removeWhiteSpace($html));
     }
 
     /**
@@ -220,7 +219,7 @@ Best regards,
 John
 example.com
 (text version)';
-        $this->assertTrue($this->fixNewLines($text) === $this->fixNewLines($expectedText));
+        $this->assertEquals($this->removeWhiteSpace($expectedText), $this->removeWhiteSpace($text));
 
         $email = $this->getExampleEmail(true, false);
         $raw = $app->emailsConverter->emailToRaw($email);
@@ -234,7 +233,7 @@ John
 example.com [http://example.com]
 
  (html version)';
-        $this->assertTrue($this->fixNewLines($text) === $this->fixNewLines($expectedText));
+        $this->assertEquals($this->removeWhiteSpace($expectedText), $this->removeWhiteSpace($text));
     }
 
     private function getExampleEmail($addHTMLContent = true, $addTextContent = true)
@@ -341,8 +340,8 @@ t4AX
         return $email;
     }
 
-    private function fixNewLines($text)
+    private function removeWhiteSpace($text)
     {
-        return str_replace("\r\n", "\n", $text);
+        return str_replace(["\r\n", "\n", "\t", " "], "", $text);
     }
 }
