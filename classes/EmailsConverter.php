@@ -123,7 +123,7 @@ To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
                 return '';
             }
             $result = $getURLContent($value);
-            if (strlen($result['content']) > 0) {
+            if (strlen((string)$result['content']) > 0) {
                 return 'data:' . ($result['contentType']) . ';base64,' . base64_encode($result['content']);
             }
             return '';
