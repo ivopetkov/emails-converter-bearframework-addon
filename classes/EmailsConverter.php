@@ -65,28 +65,33 @@ class EmailsConverter
             }
             return $email;
         };
-        $embeds = $email->embeds->getList();
-        foreach ($embeds as $embed) {
-            if ($embed->mimeType === 'message/rfc822') {
-                $embedEmail = $this->rawToEmail($embed->content);
-                $embedEmailRecipientsList = $embedEmail->recipients->getList();
-                $embedEmailRecipientsText = [];
-                foreach ($embedEmailRecipientsList as $embedEmailRecipient) {
-                    $embedEmailRecipientsText[] = $emailAccountToText($embedEmailRecipient);
+
+        $processAttachedEmails = function ($list) use (&$content, $emailAccountToText, $options) {
+            foreach ($list as $item) {
+                if ($item->mimeType === 'message/rfc822') {
+                    $email = $this->rawToEmail($item->content);
+                    $recipientsList = $email->recipients->getList();
+                    $recipientsText = [];
+                    foreach ($recipientsList as $recipient) {
+                        $recipientsText[] = $emailAccountToText($recipient);
+                    }
+                    $emailContent = $this->emailToHTML($email, $options);
+                    $appendContent = '<br><br>' . nl2br(htmlspecialchars('---------- Forwarded message ----------
+    From: ' . $emailAccountToText($email->sender) . '
+    Date: ' . (strlen($email->date) > 0 ? date('M j, Y', $email->date) . ' at ' . date('H:i', $email->date) : '') . '
+    Subject: ' . $email->subject . '
+    To: ' . implode(', ', $recipientsText))) . '<br><br>';
+                    $dom = new HTML5DOMDocument();
+                    $dom->loadHTML($content, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
+                    $dom->insertHTML($appendContent);
+                    $dom->insertHTML($emailContent);
+                    $content = $dom->saveHTML();
                 }
-                $embedEmailContent = $this->emailToHTML($embedEmail, $options);
-                $appendContent = '<br><br>' . nl2br(htmlspecialchars('---------- Forwarded message ----------
-From: ' . $emailAccountToText($embedEmail->sender) . '
-Date: ' . (strlen($embedEmail->date) > 0 ? date('M j, Y', $embedEmail->date) . ' at ' . date('H:i', $embedEmail->date) : '') . '
-Subject: ' . $embedEmail->subject . '
-To: ' . implode(', ', $embedEmailRecipientsText))) . '<br><br>';
-                $dom = new HTML5DOMDocument();
-                $dom->loadHTML($content, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
-                $dom->insertHTML($appendContent);
-                $dom->insertHTML($embedEmailContent);
-                $content = $dom->saveHTML();
             }
-        }
+        };
+
+        $processAttachedEmails($email->attachments->getList());
+        $processAttachedEmails($email->embeds->getList());
 
         $getURLContent = function (string $value): array {
             if (strpos($value, '//') === 0) {
