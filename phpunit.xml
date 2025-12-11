@@ -1,13 +1,13 @@
-<phpunit bootstrap="vendor/autoload.php">
+<phpunit bootstrap="vendor/autoload.php" processIsolation="true">
     <testsuites>
         <testsuite name="Tests">
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
-    <coverage>
+    <source>
         <include>
             <directory>./classes/</directory>
             <file>./index.php</file>
         </include>
-    </coverage>
+    </source>
 </phpunit>

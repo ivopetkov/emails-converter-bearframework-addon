@@ -106,7 +106,7 @@ class EmailsConverter
                 $result = (string)curl_exec($ch);
                 $error = (string)curl_error($ch);
                 $info = curl_getinfo($ch);
-                curl_close($ch);
+                // curl_close($ch); not needed since PHP 8.0
                 if (!isset($error[0])) {
                     return ['content' => $result, 'contentType' => isset($info['content_type']) ? $info['content_type'] : null];
                 }
