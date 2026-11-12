@@ -43,7 +43,6 @@ class EmailsConverter
         $embedImages = isset($options['embedImages']) && $options['embedImages'] === true;
         $removeImages = isset($options['removeImages']) && $options['removeImages'] === true;
         $secureLinks = isset($options['secureLinks']) && $options['secureLinks'] === true;
-
         $contentPart = $email->content->getList()->filterBy('mimeType', 'text/html')->getFirst();
         if ($contentPart !== null) {
             $content = $this->getContentPartContentInUTF8($contentPart, true);
@@ -90,6 +89,7 @@ class EmailsConverter
             }
         };
 
+        $processAttachedEmails($email->content->getList());
         $processAttachedEmails($email->attachments->getList());
         $processAttachedEmails($email->embeds->getList());
 
